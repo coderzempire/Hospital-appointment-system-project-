@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Dashboard — MediCare</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="patient.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="dashboard-body">
+  <div class="bg-blobs">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-logo-sm">🏥</span>
+      <div>
+        <h2>MediCare</h2>
+        <p>Patient Panel</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-section="dashboard">
+        <span class="nav-icon">🏠</span> Dashboard
+      </button>
+      <button class="nav-item" data-section="doctors">
+        <span class="nav-icon">👨‍⚕️</span> Find Doctors
+      </button>
+      <button class="nav-item" data-section="book">
+        <span class="nav-icon">📅</span> Book Appointment
+      </button>
+      <button class="nav-item" data-section="appointments">
+        <span class="nav-icon">📋</span> My Appointments
+      </button>
+      <button class="nav-item" data-section="payments">
+        <span class="nav-icon">💳</span> Payments
+      </button>
+      <button class="nav-item" data-section="profile">
+        <span class="nav-icon">👤</span> My Profile
+      </button>
+    </nav>
+
+    <button class="logout-btn" id="logoutBtn">
+      <span>🚪</span> Logout
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+
+      <div class="topbar-title">
+        <h1 id="welcomeText">Welcome 👋</h1>
+        <p id="pageSubtitle">Your health, our priority</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="status-toggle" id="statusPill">
+          <span class="status-dot open"></span>
+          <span class="status-text">Hospital: Open</span>
+        </button>
+        <div class="patient-avatar" id="patientAvatar">P</div>
+      </div>
+    </header>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section class="page-section active" id="section-dashboard">
+      <!-- Welcome Banner -->
+      <div class="welcome-banner glass-panel">
+        <div class="welcome-content">
+          <h2 id="welcomeBannerTitle">Good Day!</h2>
+          <p id="welcomeBannerMsg">Book your appointment in seconds.</p>
+        </div>
+        <div class="welcome-emoji">🩺</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <p class="stat-label">Upcoming</p>
+            <h3 class="stat-value" id="statUpcoming">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏥</div>
+          <div class="stat-info">
+            <p class="stat-label">Total Visits</p>
+            <h3 class="stat-value" id="statVisits">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <p class="stat-label">Total Spent (₹)</p>
+            <h3 class="stat-value" id="statSpent">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">❤️</div>
+          <div class="stat-info">
+            <p class="stat-label">Blood Group</p>
+            <h3 class="stat-value" id="statBlood">—</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Doctors -->
+      <div class="glass-panel">
+        <h3 class="panel-title">Available Doctors</h3>
+        <div id="featuredDoctors" class="doctors-grid"></div>
+      </div>
+
+      <!-- Medical History (only for old patients) -->
+      <div class="glass-panel" id="historyPanel" style="display:none;">
+        <h3 class="panel-title">Recent Medical Records</h3>
+        <div id="historyList" class="history-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ DOCTORS ============ -->
+    <section class="page-section" id="section-doctors">
+      <div class="section-header">
+        <div>
+          <h2>Find Doctors</h2>
+          <p>Search and filter by specialization</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="search-bar">
+          <input type="text" id="doctorSearch" placeholder="🔍 Search doctor by name..." />
+          <select id="specFilter">
+            <option value="">All Specializations</option>
+            <option>Cardiology</option>
+            <option>Dermatology</option>
+            <option>Neurology</option>
+            <option>Orthopedics</option>
+            <option>Pediatrics</option>
+            <option>Psychiatry</option>
+            <option>General Medicine</option>
+            <option>ENT</option>
+            <option>Ophthalmology</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="allDoctors" class="doctors-grid"></div>
+    </section>
+
+    <!-- ============ BOOK APPOINTMENT ============ -->
+    <section class="page-section" id="section-book">
+      <div class="section-header">
+        <div>
+          <h2>Book Appointment</h2>
+          <p>Select doctor, date, time slot and pay</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="booking-steps">
+          <div class="bstep active" data-step="1">
+            <span class="bstep-num">1</span> Doctor
+          </div>
+          <div class="bstep" data-step="2">
+            <span class="bstep-num">2</span> Date & Time
+          </div>
+          <div class="bstep" data-step="3">
+            <span class="bstep-num">3</span> Payment
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 1: Select Doctor -->
+      <div class="glass-panel booking-panel" data-panel="1">
+        <h3 class="panel-title">Choose a Doctor</h3>
+        <div id="bookDoctorsList" class="doctors-grid"></div>
+      </div>
+
+      <!-- Step 2: Date & Time -->
+      <div class="glass-panel booking-panel hidden" data-panel="2">
+        <h3 class="panel-title">Select Date & Time</h3>
+        <div id="selectedDoctorInfo" class="selected-doctor"></div>
+
+        <div class="input-group" style="margin-top:16px;">
+          <label>Appointment Date</label>
+          <input type="date" id="apptDate" />
+        </div>
+
+        <div class="input-group" style="margin-top:16px;">
+          <label>Available Time Slots</label>
+          <div id="timeSlots" class="time-slots"></div>
+        </div>
+
+        <div class="input-group" style="margin-top:16px;">
+          <label>Reason / Symptoms (optional)</label>
+          <input type="text" id="apptReason" placeholder="e.g. Fever, checkup" />
+        </div>
+
+        <button class="primary-btn" id="proceedToPay" style="margin-top:18px;">
+          Proceed to Pay →
+        </button>
+      </div>
+
+      <!-- Step 3: Payment -->
+      <div class="glass-panel booking-panel hidden" data-panel="3">
+        <h3 class="panel-title">Payment</h3>
+
+        <div class="payment-summary">
+          <div class="pay-row">
+            <span>Doctor</span>
+            <strong id="payDoctor">—</strong>
+          </div>
+          <div class="pay-row">
+            <span>Date & Time</span>
+            <strong id="payDateTime">—</strong>
+          </div>
+          <div class="pay-row">
+            <span>Consultation Fee</span>
+            <strong id="payAmount">₹0</strong>
+          </div>
+          <div class="pay-row total">
+            <span>Total Payable</span>
+            <strong id="payTotal">₹0</strong>
+          </div>
+        </div>
+
+        <div class="qr-box">
+          <p class="qr-label">Scan QR to Pay via UPI</p>
+          <img id="qrImage" src="" alt="UPI QR Code" />
+          <p class="qr-upi">UPI: <strong>medicare@upi</strong></p>
+        </div>
+
+        <div class="modal-actions" style="margin-top:18px;">
+          <button class="ghost-btn" id="backToStep2">← Back</button>
+          <button class="primary-btn" id="confirmPayment">I've Paid ₹200+ ✓</button>
+        </div>
+        <p class="form-message" id="payMsg"></p>
+      </div>
+    </section>
+
+    <!-- ============ MY APPOINTMENTS ============ -->
+    <section class="page-section" id="section-appointments">
+      <div class="section-header">
+        <div>
+          <h2>My Appointments</h2>
+          <p>Track your upcoming and past visits</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="tabs-switch">
+          <button class="tab-btn active" data-tab="upcoming">Upcoming</button>
+          <button class="tab-btn" data-tab="past">Past</button>
+        </div>
+
+        <div id="apptList" class="appt-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ PAYMENTS ============ -->
+    <section class="page-section" id="section-payments">
+      <div class="section-header">
+        <div>
+          <h2>Payment History</h2>
+          <p>All your transactions</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Doctor</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Txn ID</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTableBody"></tbody>
+          </table>
+          <div class="empty-state hidden" id="paymentsEmpty">
+            <p>No payments yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROFILE ============ -->
+    <section class="page-section" id="section-profile">
+      <div class="section-header">
+        <div>
+          <h2>My Profile</h2>
+          <p>Manage your personal information</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <h3 class="panel-title">Personal Information</h3>
+        <form id="profileForm" class="settings-form">
+          <div class="form-row">
+            <div class="input-group">
+              <label>Full Name</label>
+              <input type="text" id="pName" required />
+            </div>
+            <div class="input-group">
+              <label>Email</label>
+              <input type="email" id="pEmail" disabled />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="input-group">
+              <label>Phone</label>
+              <input type="tel" id="pPhone" placeholder="+91 XXXXXXXXXX" />
+            </div>
+            <div class="input-group">
+              <label>Age</label>
+              <input type="number" id="pAge" placeholder="25" min="1" max="120" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="input-group">
+              <label>Gender</label>
+              <select id="pGender">
+                <option value="">Select...</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Blood Group</label>
+              <select id="pBlood">
+                <option value="">Select...</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>O+</option><option>O-</option>
+                <option>AB+</option><option>AB-</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Address</label>
+            <input type="text" id="pAddress" placeholder="Your address" />
+          </div>
+
+          <button type="submit" class="primary-btn">Save Profile</button>
+          <p class="form-message" id="profileMsg"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- PAYMENT SUCCESS MODAL -->
+  <div class="modal-overlay hidden" id="successModal">
+    <div class="modal glass-card small">
+      <div class="success-icon">✅</div>
+      <h2 class="modal-title" style="text-align:center;">Booking Confirmed!</h2>
+      <p class="modal-text" id="successText" style="text-align:center;"></p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="primary-btn" id="successOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="patient.js"></script>
+</body>
+</html>
