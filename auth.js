@@ -278,10 +278,8 @@ form.addEventListener("submit", async (e) => {
           submitBtn.disabled = false;
           submitBtn.querySelector(".btn-text").textContent = originalText;
         } else {
-          alert("Patient dashboard coming soon!");
-          submitBtn.disabled = false;
-          submitBtn.querySelector(".btn-text").textContent = originalText;
-        }
+  window.location.href = "patient-dashboard.html";
+}
       }, 800);
 
     } else {
