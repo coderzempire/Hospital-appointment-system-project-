@@ -1,6 +1,7 @@
 /* =====================================================
    MediCare — Auth Logic
-   Handles: Role selection, Login/Register toggle, Form
+   Login:   Patient / Doctor / Admin
+   Register: Only Patient
    ===================================================== */
 
 // ---------- State ----------
@@ -11,12 +12,14 @@ const state = {
 
 // ---------- DOM ----------
 const roleTabs      = document.querySelectorAll(".role-tab");
+const roleTabsWrap  = document.getElementById("roleTabs");
 const roleIndicator = document.querySelector(".role-indicator");
 const authBtns      = document.querySelectorAll(".auth-btn");
 const form          = document.getElementById("authForm");
 const nameGroup     = document.getElementById("nameGroup");
 const confirmGroup  = document.getElementById("confirmGroup");
 const forgotWrap    = document.getElementById("forgotWrap");
+const registerNote  = document.getElementById("registerNote");
 const submitBtn     = document.getElementById("submitBtn");
 const formMessage   = document.getElementById("formMessage");
 const fullNameInput = document.getElementById("fullName");
@@ -27,6 +30,9 @@ const confirmInput  = document.getElementById("confirmPassword");
 // ---------- Role Tab Logic ----------
 roleTabs.forEach((tab, index) => {
   tab.addEventListener("click", () => {
+    // Register mode me role change allowed nahi
+    if (state.mode === "register") return;
+
     roleTabs.forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
 
@@ -38,21 +44,32 @@ roleTabs.forEach((tab, index) => {
 });
 
 function moveIndicator(index) {
-  // indicator width = (100% - padding(10) - gaps(8)) / 3
-  // shift by index * (indicatorWidth + gap)
   const gap = 4;
   const tabWidth = roleTabs[0].offsetWidth;
   roleIndicator.style.transform = `translateX(${index * (tabWidth + gap)}px)`;
 }
 
-// Fix indicator position on load & resize
+function resetIndicatorToPatient() {
+  roleTabs.forEach((t) => t.classList.remove("active"));
+  roleTabs[0].classList.add("active");
+  state.role = "patient";
+  moveIndicator(0);
+}
+
+// Fix indicator on load & resize
 window.addEventListener("load", () => {
-  const activeIndex = [...roleTabs].findIndex((t) => t.classList.contains("active"));
-  moveIndicator(activeIndex);
+  const activeIndex = [...roleTabs].findIndex((t) =>
+    t.classList.contains("active")
+  );
+  moveIndicator(activeIndex < 0 ? 0 : activeIndex);
 });
+
 window.addEventListener("resize", () => {
-  const activeIndex = [...roleTabs].findIndex((t) => t.classList.contains("active"));
-  moveIndicator(activeIndex);
+  if (state.mode === "register") return;
+  const activeIndex = [...roleTabs].findIndex((t) =>
+    t.classList.contains("active")
+  );
+  moveIndicator(activeIndex < 0 ? 0 : activeIndex);
 });
 
 // ---------- Login / Register Toggle ----------
@@ -70,20 +87,41 @@ authBtns.forEach((btn) => {
 
 function toggleFormFields() {
   if (state.mode === "register") {
+    // Hide role tabs + force patient
+    roleTabsWrap.classList.add("hidden");
+    resetIndicatorToPatient();
+
+    // Show register-only fields
     nameGroup.classList.remove("hidden");
     confirmGroup.classList.remove("hidden");
     forgotWrap.classList.add("hidden");
+    registerNote.classList.remove("hidden");
   } else {
+    // Show role tabs
+    roleTabsWrap.classList.remove("hidden");
+
+    // Hide register-only fields
     nameGroup.classList.add("hidden");
     confirmGroup.classList.add("hidden");
     forgotWrap.classList.remove("hidden");
+    registerNote.classList.add("hidden");
+
+    // Reset to patient role
+    resetIndicatorToPatient();
   }
 }
 
 function updateSubmitText() {
   const roleLabel = state.role.charAt(0).toUpperCase() + state.role.slice(1);
   const actionLabel = state.mode === "login" ? "Login" : "Register";
-  submitBtn.querySelector(".btn-text").textContent = `${actionLabel} as ${roleLabel}`;
+
+  let text;
+  if (state.mode === "register") {
+    text = "Register as Patient";
+  } else {
+    text = `${actionLabel} as ${roleLabel}`;
+  }
+  submitBtn.querySelector(".btn-text").textContent = text;
 }
 
 // ---------- Message Helpers ----------
@@ -134,17 +172,25 @@ form.addEventListener("submit", async (e) => {
   submitBtn.querySelector(".btn-text").textContent = "Please wait...";
 
   try {
-    // 🔗 Backend API call yahan aayegi (Week 2 me)
-    // const res = await fetch("http://localhost:8080/api/auth/login", { ... });
+    // 🔗 Backend API yahan aayegi (Week 2 me)
+    // LOGIN:    POST /api/auth/login    { email, password, role }
+    // REGISTER: POST /api/auth/register { fullName, email, password }
 
     await new Promise((resolve) => setTimeout(resolve, 1200)); // mock delay
 
-    const roleLabel = state.role.charAt(0).toUpperCase() + state.role.slice(1);
-    const action = state.mode === "login" ? "Logged in" : "Registered";
-    showMessage(`${action} successfully as ${roleLabel}! 🎉`, "success");
+    if (state.mode === "login") {
+      const roleLabel =
+        state.role.charAt(0).toUpperCase() + state.role.slice(1);
+      showMessage(`Logged in successfully as ${roleLabel}! 🎉`, "success");
 
-    // 🚀 Redirect (baad me role ke hisaab se different pages)
-    // window.location.href = `${state.role}-dashboard.html`;
+      // 🚀 Redirect (baad me role ke hisaab se)
+      // window.location.href = `${state.role}-dashboard.html`;
+    } else {
+      showMessage("Registered successfully as Patient! 🎉", "success");
+
+      // 🚀 Redirect to login (baad me)
+      // window.location.href = "index.html";
+    }
   } catch (err) {
     showMessage("Something went wrong. Please try again.");
   } finally {
