@@ -239,28 +239,39 @@ form.addEventListener("submit", async (e) => {
     await new Promise((resolve) => setTimeout(resolve, 1200));
 
     const demoUsers = {
-      "admin@medicare.com":   { password: "admin123",   role: "admin"   },
-      "doctor@medicare.com":  { password: "doctor123",  role: "doctor"  },
-      "patient@medicare.com": { password: "patient123", role: "patient" },
-    };
+  "admin@medicare.com":   { password: "admin123",   role: "admin"   },
+  "doctor@medicare.com":  { password: "doctor123",  role: "doctor"  },
+  "patient@medicare.com": { password: "patient123", role: "patient" },
+};
 
-    if (state.mode === "login") {
-      const demo = demoUsers[email];
-      const adminPass = localStorage.getItem("medicare_admin_pass") || "admin123";
+if (state.mode === "login") {
+  let valid = false;
+  const adminPass = localStorage.getItem("medicare_admin_pass") || "admin123";
 
-      let valid = false;
+  // 1️⃣ Admin check
+  if (state.role === "admin" && email === "admin@medicare.com" && password === adminPass) {
+    valid = true;
+  }
+  // 2️⃣ Doctor check (admin ne add kiye doctors + demo)
+  else if (state.role === "doctor") {
+    const doctors = JSON.parse(localStorage.getItem("medicare_doctors") || "[]");
+    const foundDoctor = doctors.find(d => d.email === email && d.password === password);
+    if (foundDoctor) valid = true;
+    else if (demoUsers[email] && demoUsers[email].password === password && demoUsers[email].role === "doctor") valid = true;
+  }
+  // 3️⃣ Patient check (registered patients + demo)
+  else if (state.role === "patient") {
+    const patients = JSON.parse(localStorage.getItem("medicare_patients") || "[]");
+    const foundPatient = patients.find(p => p.email === email && p.password === password);
+    if (foundPatient) valid = true;
+    else if (demoUsers[email] && demoUsers[email].password === password && demoUsers[email].role === "patient") valid = true;
+  }
 
-      if (state.role === "admin" && email === "admin@medicare.com" && password === adminPass) {
-        valid = true;
-      } else if (demo && demo.password === password && demo.role === state.role) {
-        valid = true;
-      }
-
-      if (!valid) {
-        submitBtn.disabled = false;
-        submitBtn.querySelector(".btn-text").textContent = originalText;
-        return showMessage("Invalid credentials. Try: admin@medicare.com / admin123");
-      }
+  if (!valid) {
+    submitBtn.disabled = false;
+    submitBtn.querySelector(".btn-text").textContent = originalText;
+    return showMessage("Invalid credentials. Please check email/password.");
+  }
 
       localStorage.setItem(
         "medicare_user",
