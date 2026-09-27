@@ -6,8 +6,8 @@
 
 // ---------- State ----------
 const state = {
-  role: "patient", // patient | doctor | admin
-  mode: "login",   // login | register
+  role: "patient",
+  mode: "login",
 };
 
 // ---------- DOM ----------
@@ -30,12 +30,9 @@ const confirmInput  = document.getElementById("confirmPassword");
 // ---------- Role Tab Logic ----------
 roleTabs.forEach((tab, index) => {
   tab.addEventListener("click", () => {
-    // Register mode me role change allowed nahi
     if (state.mode === "register") return;
-
     roleTabs.forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
-
     state.role = tab.dataset.role;
     moveIndicator(index);
     updateSubmitText();
@@ -56,7 +53,6 @@ function resetIndicatorToPatient() {
   moveIndicator(0);
 }
 
-// Fix indicator on load & resize
 window.addEventListener("load", () => {
   const activeIndex = [...roleTabs].findIndex((t) =>
     t.classList.contains("active")
@@ -77,7 +73,6 @@ authBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
     authBtns.forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
-
     state.mode = btn.dataset.mode;
     toggleFormFields();
     updateSubmitText();
@@ -87,39 +82,29 @@ authBtns.forEach((btn) => {
 
 function toggleFormFields() {
   if (state.mode === "register") {
-    // Hide role tabs + force patient
     roleTabsWrap.classList.add("hidden");
     resetIndicatorToPatient();
-
-    // Show register-only fields
     nameGroup.classList.remove("hidden");
     confirmGroup.classList.remove("hidden");
     forgotWrap.classList.add("hidden");
     registerNote.classList.remove("hidden");
   } else {
-    // Show role tabs
     roleTabsWrap.classList.remove("hidden");
-
-    // Hide register-only fields
     nameGroup.classList.add("hidden");
     confirmGroup.classList.add("hidden");
     forgotWrap.classList.remove("hidden");
     registerNote.classList.add("hidden");
-
-    // Reset to patient role
     resetIndicatorToPatient();
   }
 }
 
 function updateSubmitText() {
   const roleLabel = state.role.charAt(0).toUpperCase() + state.role.slice(1);
-  const actionLabel = state.mode === "login" ? "Login" : "Register";
-
   let text;
   if (state.mode === "register") {
     text = "Register as Patient";
   } else {
-    text = `${actionLabel} as ${roleLabel}`;
+    text = `Login as ${roleLabel}`;
   }
   submitBtn.querySelector(".btn-text").textContent = text;
 }
@@ -135,144 +120,99 @@ function clearMessage() {
   formMessage.className = "form-message";
 }
 
-// ---------- Form Submit ----------
+// ---------- Form Submit (SINGLE HANDLER) ----------
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearMessage();
 
-  const email = emailInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
   const password = passInput.value;
 
   // ----- Validation -----
   if (!email || !password) {
     return showMessage("Please fill in all fields.");
   }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return showMessage("Please enter a valid email address.");
   }
-
   if (password.length < 6) {
     return showMessage("Password must be at least 6 characters.");
   }
-
   if (state.mode === "register") {
     const fullName = fullNameInput.value.trim();
     const confirmPassword = confirmInput.value;
-
     if (!fullName) return showMessage("Please enter your full name.");
     if (password !== confirmPassword) {
       return showMessage("Passwords do not match.");
     }
   }
 
-  // ----- Simulate API call -----
+  // ----- Loading state -----
   submitBtn.disabled = true;
   const originalText = submitBtn.querySelector(".btn-text").textContent;
   submitBtn.querySelector(".btn-text").textContent = "Please wait...";
 
   try {
-    // 🔗 Backend API yahan aayegi (Week 2 me)
-    // LOGIN:    POST /api/auth/login    { email, password, role }
-    // REGISTER: POST /api/auth/register { fullName, email, password }
-
-    await new Promise((resolve) => setTimeout(resolve, 1200)); // mock delay
-
-    if (state.mode === "login") {
-      const roleLabel =
-        state.role.charAt(0).toUpperCase() + state.role.slice(1);
-      showMessage(`Logged in successfully as ${roleLabel}! 🎉`, "success");
-
-      // 🚀 Redirect (baad me role ke hisaab se)
-      // window.location.href = `${state.role}-dashboard.html`;
-    } else {
-      showMessage("Registered successfully as Patient! 🎉", "success");
-
-      // 🚀 Redirect to login (baad me)
-      // window.location.href = "index.html";
-    }
-  } catch (err) {
-    showMessage("Something went wrong. Please try again.");
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.querySelector(".btn-text").textContent = originalText;
-  }
-});
-
-// ---------- Init ----------
-updateSubmitText();
-// ---------- Form Submit ----------
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearMessage();
-
-  const email = emailInput.value.trim();
-  const password = passInput.value;
-
-  if (!email || !password) {
-    return showMessage("Please fill in all fields.");
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return showMessage("Please enter a valid email address.");
-  }
-
-  if (password.length < 6) {
-    return showMessage("Password must be at least 6 characters.");
-  }
-
-  if (state.mode === "register") {
-    const fullName = fullNameInput.value.trim();
-    const confirmPassword = confirmInput.value;
-
-    if (!fullName) return showMessage("Please enter your full name.");
-    if (password !== confirmPassword) {
-      return showMessage("Passwords do not match.");
-    }
-  }
-
-  submitBtn.disabled = true;
-  const originalText = submitBtn.querySelector(".btn-text").textContent;
-  submitBtn.querySelector(".btn-text").textContent = "Please wait...";
-
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     const demoUsers = {
-  "admin@medicare.com":   { password: "admin123",   role: "admin"   },
-  "doctor@medicare.com":  { password: "doctor123",  role: "doctor"  },
-  "patient@medicare.com": { password: "patient123", role: "patient" },
-};
+      "admin@medicare.com":   { password: "admin123",   role: "admin"   },
+      "doctor@medicare.com":  { password: "doctor123",  role: "doctor"  },
+      "patient@medicare.com": { password: "patient123", role: "patient" },
+    };
 
-if (state.mode === "login") {
-  let valid = false;
-  const adminPass = localStorage.getItem("medicare_admin_pass") || "admin123";
+    // ==================== LOGIN ====================
+    if (state.mode === "login") {
+      let valid = false;
 
-  // 1️⃣ Admin check
-  if (state.role === "admin" && email === "admin@medicare.com" && password === adminPass) {
-    valid = true;
-  }
-  // 2️⃣ Doctor check (admin ne add kiye doctors + demo)
-  else if (state.role === "doctor") {
-    const doctors = JSON.parse(localStorage.getItem("medicare_doctors") || "[]");
-    const foundDoctor = doctors.find(d => d.email === email && d.password === password);
-    if (foundDoctor) valid = true;
-    else if (demoUsers[email] && demoUsers[email].password === password && demoUsers[email].role === "doctor") valid = true;
-  }
-  // 3️⃣ Patient check (registered patients + demo)
-  else if (state.role === "patient") {
-    const patients = JSON.parse(localStorage.getItem("medicare_patients") || "[]");
-    const foundPatient = patients.find(p => p.email === email && p.password === password);
-    if (foundPatient) valid = true;
-    else if (demoUsers[email] && demoUsers[email].password === password && demoUsers[email].role === "patient") valid = true;
-  }
+      // 1) ADMIN
+      if (state.role === "admin") {
+        const adminPass = localStorage.getItem("medicare_admin_pass") || "admin123";
+        if (email === "admin@medicare.com" && password === adminPass) {
+          valid = true;
+        }
+      }
 
-  if (!valid) {
-    submitBtn.disabled = false;
-    submitBtn.querySelector(".btn-text").textContent = originalText;
-    return showMessage("Invalid credentials. Please check email/password.");
-  }
+      // 2) DOCTOR
+      else if (state.role === "doctor") {
+        const doctors = JSON.parse(localStorage.getItem("medicare_doctors") || "[]");
+        const found = doctors.find(
+          (d) => d.email.toLowerCase() === email && d.password === password
+        );
+        if (found) valid = true;
+        else if (
+          demoUsers[email] &&
+          demoUsers[email].password === password &&
+          demoUsers[email].role === "doctor"
+        ) {
+          valid = true;
+        }
+      }
 
+      // 3) PATIENT
+      else if (state.role === "patient") {
+        const patients = JSON.parse(localStorage.getItem("medicare_patients") || "[]");
+        const found = patients.find(
+          (p) => p.email.toLowerCase() === email && p.password === password
+        );
+        if (found) valid = true;
+        else if (
+          demoUsers[email] &&
+          demoUsers[email].password === password &&
+          demoUsers[email].role === "patient"
+        ) {
+          valid = true;
+        }
+      }
+
+      // Invalid
+      if (!valid) {
+        submitBtn.disabled = false;
+        submitBtn.querySelector(".btn-text").textContent = originalText;
+        return showMessage("Invalid email or password. Please try again.");
+      }
+
+      // Save logged-in user
       localStorage.setItem(
         "medicare_user",
         JSON.stringify({ email, role: state.role })
@@ -289,58 +229,63 @@ if (state.mode === "login") {
           submitBtn.disabled = false;
           submitBtn.querySelector(".btn-text").textContent = originalText;
         } else {
-  window.location.href = "patient-dashboard.html";
-}
+          window.location.href = "patient-dashboard.html";
+        }
       }, 800);
+    }
 
-    } else {
-  // Save patient to localStorage
-  const fullName = fullNameInput.value.trim();
-  const patients = JSON.parse(localStorage.getItem("medicare_patients") || "[]");
+    // ==================== REGISTER (only Patient) ====================
+    else {
+      const fullName = fullNameInput.value.trim();
+      const patients = JSON.parse(localStorage.getItem("medicare_patients") || "[]");
 
-  // Duplicate email check
-  if (patients.some(p => p.email === email)) {
-    submitBtn.disabled = false;
-    submitBtn.querySelector(".btn-text").textContent = originalText;
-    return showMessage("This email is already registered. Please login.");
-  }
+      // Duplicate check
+      if (patients.some((p) => p.email.toLowerCase() === email)) {
+        submitBtn.disabled = false;
+        submitBtn.querySelector(".btn-text").textContent = originalText;
+        return showMessage("This email is already registered. Please login.");
+      }
 
-  patients.push({
-    fullName,
-    email,
-    password,
-    role: "patient",
-    createdAt: new Date().toISOString(),
-  });
+      // Save patient
+      patients.push({
+        fullName,
+        email,
+        password,
+        role: "patient",
+        createdAt: new Date().toISOString(),
+      });
+      localStorage.setItem("medicare_patients", JSON.stringify(patients));
 
-  localStorage.setItem("medicare_patients", JSON.stringify(patients));
+      // Create patient dashboard profile
+      localStorage.setItem(
+        `medicare_patient_${email}`,
+        JSON.stringify({
+          name: fullName,
+          email,
+          phone: "",
+          age: "",
+          gender: "",
+          blood: "",
+          address: "",
+          isOld: false,
+        })
+      );
 
-  // Also create patient profile for dashboard
-  localStorage.setItem(
-    `medicare_patient_${email}`,
-    JSON.stringify({
-      name: fullName,
-      email,
-      phone: "",
-      age: "",
-      gender: "",
-      blood: "",
-      address: "",
-      isOld: false,
-    })
-  );
+      showMessage("Registered successfully! Please login. 🎉", "success");
 
-  showMessage("Registered successfully! You can now login. 🎉", "success");
-  setTimeout(() => {
-    submitBtn.disabled = false;
-    submitBtn.querySelector(".btn-text").textContent = originalText;
-    // Auto-switch to login tab
-    document.querySelector('.auth-btn[data-mode="login"]').click();
-    emailInput.value = email;
-    passInput.value = "";
-  }, 1500);
-}
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.querySelector(".btn-text").textContent = originalText;
+        // Auto switch to login tab
+        document.querySelector('.auth-btn[data-mode="login"]').click();
+        emailInput.value = email;
+        passInput.value = "";
+        confirmInput.value = "";
+        fullNameInput.value = "";
+      }, 1200);
+    }
   } catch (err) {
+    console.error(err);
     showMessage("Something went wrong. Please try again.");
     submitBtn.disabled = false;
     submitBtn.querySelector(".btn-text").textContent = originalText;
