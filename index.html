@@ -29,8 +29,8 @@
       <p class="brand-subtitle">Hospital Appointment System</p>
     </header>
 
-    <!-- Role Selector -->
-    <div class="role-tabs" role="tablist">
+    <!-- Role Tabs (only for Login) -->
+    <div class="role-tabs" id="roleTabs" role="tablist">
       <button class="role-tab active" data-role="patient">Patient</button>
       <button class="role-tab" data-role="doctor">Doctor</button>
       <button class="role-tab" data-role="admin">Admin</button>
@@ -41,6 +41,15 @@
     <div class="auth-toggle">
       <button class="auth-btn active" data-mode="login">Login</button>
       <button class="auth-btn" data-mode="register">Register</button>
+    </div>
+
+    <!-- Register Info Note -->
+    <div class="register-note hidden" id="registerNote">
+      <span class="note-icon">ℹ️</span>
+      <span class="note-text">
+        Registration is only for <strong>Patients</strong>. Doctors and Admins
+        are added by the hospital.
+      </span>
     </div>
 
     <!-- Form -->
