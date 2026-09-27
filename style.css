@@ -142,6 +142,11 @@ body {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 18px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.role-tabs.hidden {
+  display: none;
 }
 
 .role-tab {
@@ -211,6 +216,37 @@ body {
   height: 2px;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: 2px;
+}
+
+/* ===== Register Note ===== */
+.register-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid rgba(124, 92, 255, 0.3);
+  border-radius: 12px;
+  animation: fadeIn 0.35s ease;
+}
+
+.register-note.hidden {
+  display: none;
+}
+
+.register-note .note-icon {
+  font-size: 14px;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.register-note strong {
+  color: #fff;
+  font-weight: 600;
 }
 
 /* ===== Form ===== */
@@ -304,7 +340,7 @@ body {
   cursor: pointer;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(124, 92, 255, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
 .submit-btn:hover {
@@ -314,6 +350,12 @@ body {
 
 .submit-btn:active {
   transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .submit-btn::before {
@@ -332,7 +374,7 @@ body {
   transition: left 0.6s ease;
 }
 
-.submit-btn:hover::before {
+.submit-btn:hover:not(:disabled)::before {
   left: 100%;
 }
 
@@ -361,4 +403,5 @@ body {
   .auth-btn { font-size: 14px; }
   .input-group input { padding: 12px 14px; font-size: 13.5px; }
   .blob { filter: blur(70px); }
+  .register-note { font-size: 11.5px; }
 }
