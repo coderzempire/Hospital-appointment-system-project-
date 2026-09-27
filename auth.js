@@ -294,13 +294,52 @@ if (state.mode === "login") {
       }, 800);
 
     } else {
-      showMessage("Registered successfully as Patient! 🎉", "success");
-      setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.querySelector(".btn-text").textContent = originalText;
-        location.reload();
-      }, 1500);
-    }
+  // Save patient to localStorage
+  const fullName = fullNameInput.value.trim();
+  const patients = JSON.parse(localStorage.getItem("medicare_patients") || "[]");
+
+  // Duplicate email check
+  if (patients.some(p => p.email === email)) {
+    submitBtn.disabled = false;
+    submitBtn.querySelector(".btn-text").textContent = originalText;
+    return showMessage("This email is already registered. Please login.");
+  }
+
+  patients.push({
+    fullName,
+    email,
+    password,
+    role: "patient",
+    createdAt: new Date().toISOString(),
+  });
+
+  localStorage.setItem("medicare_patients", JSON.stringify(patients));
+
+  // Also create patient profile for dashboard
+  localStorage.setItem(
+    `medicare_patient_${email}`,
+    JSON.stringify({
+      name: fullName,
+      email,
+      phone: "",
+      age: "",
+      gender: "",
+      blood: "",
+      address: "",
+      isOld: false,
+    })
+  );
+
+  showMessage("Registered successfully! You can now login. 🎉", "success");
+  setTimeout(() => {
+    submitBtn.disabled = false;
+    submitBtn.querySelector(".btn-text").textContent = originalText;
+    // Auto-switch to login tab
+    document.querySelector('.auth-btn[data-mode="login"]').click();
+    emailInput.value = email;
+    passInput.value = "";
+  }, 1500);
+}
   } catch (err) {
     showMessage("Something went wrong. Please try again.");
     submitBtn.disabled = false;
