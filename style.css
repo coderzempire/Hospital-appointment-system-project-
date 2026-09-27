@@ -8,7 +8,7 @@
 :root {
   --glass-bg: rgba(255, 255, 255, 0.08);
   --glass-border: rgba(255, 255, 255, 0.18);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.65);
   --accent: #7c5cff;
@@ -40,8 +40,8 @@ body {
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.7;
+  filter: blur(75px);
+  opacity: 0.9;
   animation: float 18s ease-in-out infinite;
 }
 
@@ -70,6 +70,25 @@ body {
   left: 50%;
   animation-delay: -12s;
 }
+
+.blob-4 {
+  width: 360px;
+  height: 360px;
+  background: #00d4ff;
+  top: 40%;
+  left: 70%;
+  animation-delay: -18s;
+}
+
+.blob-5{
+  width: 340px;
+  height: 340px;
+  background: #ff5c8a;
+  top: 30%;
+  left: 90%;
+  animation-delay: -24s;
+}
+
 
 @keyframes float {
   0%, 100% { transform: translate(0, 0) scale(1); }
