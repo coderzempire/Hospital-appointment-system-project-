@@ -201,3 +201,103 @@ form.addEventListener("submit", async (e) => {
 
 // ---------- Init ----------
 updateSubmitText();
+// ---------- Form Submit ----------
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearMessage();
+
+  const email = emailInput.value.trim();
+  const password = passInput.value;
+
+  if (!email || !password) {
+    return showMessage("Please fill in all fields.");
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return showMessage("Please enter a valid email address.");
+  }
+
+  if (password.length < 6) {
+    return showMessage("Password must be at least 6 characters.");
+  }
+
+  if (state.mode === "register") {
+    const fullName = fullNameInput.value.trim();
+    const confirmPassword = confirmInput.value;
+
+    if (!fullName) return showMessage("Please enter your full name.");
+    if (password !== confirmPassword) {
+      return showMessage("Passwords do not match.");
+    }
+  }
+
+  submitBtn.disabled = true;
+  const originalText = submitBtn.querySelector(".btn-text").textContent;
+  submitBtn.querySelector(".btn-text").textContent = "Please wait...";
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
+    const demoUsers = {
+      "admin@medicare.com":   { password: "admin123",   role: "admin"   },
+      "doctor@medicare.com":  { password: "doctor123",  role: "doctor"  },
+      "patient@medicare.com": { password: "patient123", role: "patient" },
+    };
+
+    if (state.mode === "login") {
+      const demo = demoUsers[email];
+      const adminPass = localStorage.getItem("medicare_admin_pass") || "admin123";
+
+      let valid = false;
+
+      if (state.role === "admin" && email === "admin@medicare.com" && password === adminPass) {
+        valid = true;
+      } else if (demo && demo.password === password && demo.role === state.role) {
+        valid = true;
+      }
+
+      if (!valid) {
+        submitBtn.disabled = false;
+        submitBtn.querySelector(".btn-text").textContent = originalText;
+        return showMessage("Invalid credentials. Try: admin@medicare.com / admin123");
+      }
+
+      localStorage.setItem(
+        "medicare_user",
+        JSON.stringify({ email, role: state.role })
+      );
+
+      const roleLabel = state.role.charAt(0).toUpperCase() + state.role.slice(1);
+      showMessage(`Logged in successfully as ${roleLabel}! 🎉`, "success");
+
+      setTimeout(() => {
+        if (state.role === "admin") {
+          window.location.href = "admin-dashboard.html";
+        } else if (state.role === "doctor") {
+          alert("Doctor dashboard coming soon!");
+          submitBtn.disabled = false;
+          submitBtn.querySelector(".btn-text").textContent = originalText;
+        } else {
+          alert("Patient dashboard coming soon!");
+          submitBtn.disabled = false;
+          submitBtn.querySelector(".btn-text").textContent = originalText;
+        }
+      }, 800);
+
+    } else {
+      showMessage("Registered successfully as Patient! 🎉", "success");
+      setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.querySelector(".btn-text").textContent = originalText;
+        location.reload();
+      }, 1500);
+    }
+  } catch (err) {
+    showMessage("Something went wrong. Please try again.");
+    submitBtn.disabled = false;
+    submitBtn.querySelector(".btn-text").textContent = originalText;
+  }
+});
+
+// ---------- Init ----------
+updateSubmitText();
