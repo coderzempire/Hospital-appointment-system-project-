@@ -405,3 +405,135 @@ body {
   .blob { filter: blur(70px); }
   .register-note { font-size: 11.5px; }
 }
+/* ===== Reset Password — Step Indicator ===== */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-num {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-num,
+.step.done .step-num {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124, 92, 255, 0.4);
+}
+
+.step-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+.step.active .step-label {
+  color: #fff;
+  font-weight: 500;
+}
+
+.step-line {
+  flex: 1;
+  max-width: 40px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  margin-bottom: 16px;
+}
+
+.step-content.hidden {
+  display: none;
+}
+
+.step-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.step-info strong {
+  color: #fff;
+  font-weight: 500;
+}
+
+/* ===== Role Pills ===== */
+.role-pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.role-pill {
+  padding: 10px 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.role-pill.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.85), rgba(0, 212, 255, 0.7));
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124, 92, 255, 0.4);
+}
+
+.otp-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding-left: 4px;
+}
+
+.otp-hint strong {
+  color: #6ee7b7;
+  letter-spacing: 1px;
+}
+
+.success-icon {
+  font-size: 56px;
+  text-align: center;
+  margin-bottom: 8px;
+  animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.back-link-wrap {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px;
+}
