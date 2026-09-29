@@ -1,5 +1,6 @@
 /* =====================================================
-   MediCare — Patient Dashboard Logic (Robust Version)
+   MediCare — Patient Dashboard Logic (FIXED VERSION)
+   Fixes: Navigation + Admin Doctor Sync
    ===================================================== */
 
 console.log("✅ patient.js loaded");
@@ -17,10 +18,10 @@ if (!currentUser || currentUser.role !== "patient") {
   window.location.href = "index.html";
 }
 
-const patientEmail = (currentUser && currentUser.email) ? currentUser.email.toLowerCase() : "";
+const patientEmail = (currentUser?.email || "").toLowerCase();
 const patientKey = `medicare_patient_${patientEmail}`;
-const apptKey = `medicare_appts_${patientEmail}`;
-const payKey = `medicare_pays_${patientEmail}`;
+const apptKey    = `medicare_appts_${patientEmail}`;
+const payKey     = `medicare_pays_${patientEmail}`;
 
 console.log("👤 Logged in as:", patientEmail);
 
@@ -57,7 +58,6 @@ let patient = DB.get(patientKey, {
   isOld: false,
 });
 
-// Demo patient (old)
 if (patientEmail === "patient@medicare.com" && !localStorage.getItem(patientKey)) {
   patient = {
     name: "Rahul Sharma",
@@ -72,9 +72,8 @@ if (patientEmail === "patient@medicare.com" && !localStorage.getItem(patientKey)
   DB.set(patientKey, patient);
 }
 
-// Load appointments + payments
 let appointments = DB.get(apptKey, []);
-let payments = DB.get(payKey, []);
+let payments     = DB.get(payKey, []);
 
 // Seed demo history for old patient
 if (patient.isOld && appointments.length === 0 && patientEmail === "patient@medicare.com") {
@@ -103,24 +102,8 @@ if (patient.isOld && appointments.length === 0 && patientEmail === "patient@medi
     },
   ];
   payments = [
-    {
-      id: "PAY-DEMO-1",
-      date: "2025-08-15",
-      doctorName: "Dr. Aarav Mehta",
-      amount: 800,
-      method: "UPI",
-      status: "success",
-      txnId: "TXN8A9C2F1K",
-    },
-    {
-      id: "PAY-DEMO-2",
-      date: "2025-10-02",
-      doctorName: "Dr. Sneha Kapoor",
-      amount: 500,
-      method: "UPI",
-      status: "success",
-      txnId: "TXN4B7D9E3M",
-    },
+    { id: "PAY-DEMO-1", date: "2025-08-15", doctorName: "Dr. Aarav Mehta", amount: 800, method: "UPI", status: "success", txnId: "TXN8A9C2F1K" },
+    { id: "PAY-DEMO-2", date: "2025-10-02", doctorName: "Dr. Sneha Kapoor", amount: 500, method: "UPI", status: "success", txnId: "TXN4B7D9E3M" },
   ];
   DB.set(apptKey, appointments);
   DB.set(payKey, payments);
@@ -135,45 +118,153 @@ function formatDate(dateStr) {
 
 function safeBind(id, event, handler) {
   const el = document.getElementById(id);
-  if (el) {
-    el.addEventListener(event, handler);
-  } else {
-    console.warn(`⚠️ Element not found: #${id}`);
-  }
+  if (el) el.addEventListener(event, handler);
+  else console.warn(`⚠️ Element not found: #${id}`);
 }
 
-// ---------- GetAllDoctors ----------
+/* =====================================================
+   ✅ FIX #1: DOCTOR SYNC WITH ADMIN
+   Admin may store doctors under any of these keys.
+   We merge all sources + normalize field names.
+   ===================================================== */
 function getAllDoctors() {
-  const docs = DB.get("medicare_doctors", []);
-  console.log("📋 Doctors loaded:", docs.length);
-  return docs.map((d, i) => ({
-    ...d,
-    availability: d.availability || "Mon-Sat, 9AM - 5PM",
-    status: d.status || (i % 3 === 2 ? "busy" : "available"),
+  const POSSIBLE_KEYS = [
+    "medicare_doctors",
+    "medicare_doctor",
+    "doctors",
+    "medicareDoctors",
+    "medicare_doctor_list",
+    "medicare_admin_doctors",
+  ];
+
+  let raw = [];
+  let foundKey = null;
+
+  for (const key of POSSIBLE_KEYS) {
+    const data = DB.get(key, null);
+    if (Array.isArray(data) && data.length) {
+      raw = data;
+      foundKey = key;
+      break;
+    }
+  }
+
+  // Fallback: scan ALL localStorage for anything that looks like doctors
+  if (!raw.length) {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.toLowerCase().includes("doctor")) continue;
+      try {
+        const v = JSON.parse(localStorage.getItem(k));
+        if (Array.isArray(v) && v.length && (v[0].name || v[0].specialization || v[0].spec)) {
+          raw = v;
+          foundKey = k;
+          break;
+        }
+      } catch {}
+    }
+  }
+
+  console.log(`📋 Doctors loaded from "${foundKey}" → ${raw.length} entries`);
+
+  // Normalize field names (admin may use spec/speciality/etc.)
+  return raw.map((d, i) => ({
+    id:             d.id || d._id || d.doctorId || `doc-${i}`,
+    name:           d.name || d.doctorName || d.fullName || "Unknown Doctor",
+    email:          (d.email || d.doctorEmail || "").toLowerCase(),
+    specialization: d.specialization || d.spec || d.speciality || d.department || "General",
+    fee:            Number(d.fee || d.consultationFee || d.consultation_fee || d.price || 0),
+    availability:   d.availability || d.timing || d.schedule || "Mon-Sat, 9AM - 5PM",
+    status:         d.status || (d.available === false ? "busy" : "available"),
+    phone:          d.phone || d.mobile || "",
+    qualification:  d.qualification || d.degree || "",
   }));
 }
 
+/* =====================================================
+   ✅ FIX #2: NAVIGATION (Event Delegation + Ready Check)
+   Uses a single delegated listener so it works even if
+   elements are rendered later, and matches sections by
+   BOTH data-section and href fallback.
+   ===================================================== */
+function switchSection(section) {
+  console.log("🔀 Switching to section:", section);
+
+  // Update nav active state
+  document.querySelectorAll(".nav-item").forEach(n => {
+    const sec = n.dataset.section || (n.getAttribute("href") || "").replace("#", "");
+    n.classList.toggle("active", sec === section);
+  });
+
+  // Hide all sections, show target
+  let found = false;
+  document.querySelectorAll(".page-section").forEach(s => {
+    const match = s.id === `section-${section}` || s.dataset.section === section;
+    s.classList.toggle("active", match);
+    if (match) found = true;
+  });
+
+  if (!found) {
+    console.warn(`⚠️ No .page-section found for "${section}" (expected id="section-${section}")`);
+  }
+
+  // Update subtitle
+  const subtitles = {
+    dashboard:    "Your health, our priority",
+    doctors:      "Search medical specialists",
+    book:         "Select doctor, date & time",
+    appointments: "Track your visits",
+    payments:     "All your transactions",
+    profile:      "Manage personal info",
+  };
+  const sub = document.getElementById("pageSubtitle");
+  if (sub) sub.textContent = subtitles[section] || "";
+
+  // Close mobile sidebar
+  document.getElementById("sidebar")?.classList.remove("open");
+
+  // Render section content
+  if (section === "dashboard")    renderDashboard();
+  if (section === "doctors")      renderAllDoctors();
+  if (section === "book")         renderBookDoctors();
+  if (section === "appointments") renderAppointments();
+  if (section === "payments")     renderPayments();
+  if (section === "profile")      loadProfile();
+}
+
+// Global delegated click handler — works even if nav items added dynamically
+document.addEventListener("click", (e) => {
+  const navItem = e.target.closest(".nav-item");
+  if (navItem && (navItem.dataset.section || navItem.getAttribute("href"))) {
+    e.preventDefault();
+    const section = navItem.dataset.section || (navItem.getAttribute("href") || "").replace("#", "");
+    switchSection(section);
+  }
+});
+
 // ---------- Doctor Card HTML ----------
 function doctorCardHTML(d, showBookBtn = true) {
-  const initial = (d.name || "D").replace("Dr. ", "").charAt(0).toUpperCase();
+  const initial = (d.name || "D").replace("Dr. ", "").trim().charAt(0).toUpperCase();
   const available = d.status === "available";
   return `
-    <div class="doctor-card">
+    <div class="doctor-card" data-doctor-id="${d.id}">
       <div class="doctor-top">
         <div class="doctor-avatar">${initial}</div>
         <div>
-          <div class="doctor-name">${d.name || "Unknown"}</div>
-          <div class="doctor-spec">${d.specialization || "General"}</div>
+          <div class="doctor-name">${d.name}</div>
+          <div class="doctor-spec">${d.specialization}</div>
         </div>
       </div>
       <div class="doctor-availability">🕐 ${d.availability}</div>
       <div class="doctor-meta">
-        <div class="doctor-fee">₹${d.fee || 0} <small>/ visit</small></div>
+        <div class="doctor-fee">₹${d.fee} <small>/ visit</small></div>
         <span class="doctor-status ${available ? 'available' : 'busy'}">
           <span class="dot"></span> ${available ? 'Available' : 'Busy'}
         </span>
       </div>
-      ${showBookBtn && available ? `<button class="doctor-book-btn" data-email="${d.email}">Book Appointment</button>` : ""}
+      ${showBookBtn && available
+        ? `<button class="doctor-book-btn" data-doctor-id="${d.id}">Book Appointment</button>`
+        : ""}
     </div>
   `;
 }
@@ -224,7 +315,6 @@ function renderDashboard() {
     if (elS) elS.textContent = spent.toLocaleString("en-IN");
     if (elB) elB.textContent = patient.blood || "—";
 
-    // Featured doctors
     const doctors = getAllDoctors();
     const featured = doctors.slice(0, 3);
     const fd = document.getElementById("featuredDoctors");
@@ -234,7 +324,6 @@ function renderDashboard() {
         : `<p style="color:rgba(255,255,255,0.5); font-size:13px; grid-column:1/-1;">No doctors available yet. Please contact admin.</p>`;
     }
 
-    // History panel
     const historyPanel = document.getElementById("historyPanel");
     const historyList = document.getElementById("historyList");
     if (historyPanel && historyList) {
@@ -273,8 +362,16 @@ function renderAllDoctors() {
     const spec = specEl ? specEl.value : "";
 
     let doctors = getAllDoctors();
+
+    // Populate specialization filter dynamically
+    if (specEl && specEl.options.length <= 1) {
+      const specs = [...new Set(doctors.map(d => d.specialization))].sort();
+      specEl.innerHTML = `<option value="">All Specializations</option>` +
+        specs.map(s => `<option value="${s}">${s}</option>`).join("");
+    }
+
     if (query) doctors = doctors.filter(d => (d.name || "").toLowerCase().includes(query));
-    if (spec) doctors = doctors.filter(d => d.specialization === spec);
+    if (spec)  doctors = doctors.filter(d => d.specialization === spec);
 
     const container = document.getElementById("allDoctors");
     if (!container) return;
@@ -306,10 +403,8 @@ function renderBookDoctors() {
 
     container.querySelectorAll(".doctor-card").forEach(card => {
       card.addEventListener("click", () => {
-        const nameEl = card.querySelector(".doctor-name");
-        if (!nameEl) return;
-        const name = nameEl.textContent;
-        const doctor = doctors.find(d => d.name === name);
+        const id = card.dataset.doctorId;
+        const doctor = doctors.find(d => String(d.id) === String(id));
         if (doctor) selectDoctor(doctor);
       });
     });
@@ -320,24 +415,17 @@ function renderBookDoctors() {
 
 function bindDoctorBookButtons() {
   document.querySelectorAll(".doctor-book-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
+    // Remove previous listeners to avoid duplicates
+    const clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+
+    clone.addEventListener("click", (e) => {
       e.stopPropagation();
-      const email = btn.dataset.email;
-      const doctor = getAllDoctors().find(d => d.email === email);
+      const id = clone.dataset.doctorId;
+      const doctor = getAllDoctors().find(d => String(d.id) === String(id));
       if (!doctor) return;
 
-      // Switch to Book section
-      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-      const bookNav = document.querySelector('[data-section="book"]');
-      if (bookNav) bookNav.classList.add("active");
-
-      document.querySelectorAll(".page-section").forEach(s => s.classList.remove("active"));
-      const bookSection = document.getElementById("section-book");
-      if (bookSection) bookSection.classList.add("active");
-
-      const sub = document.getElementById("pageSubtitle");
-      if (sub) sub.textContent = "Select doctor, date & time";
-
+      switchSection("book");
       renderBookDoctors();
       setTimeout(() => selectDoctor(doctor), 100);
     });
@@ -350,15 +438,12 @@ function selectDoctor(doctor) {
     selectedDoctor = doctor;
 
     document.querySelectorAll("#bookDoctorsList .doctor-card").forEach(c => {
-      const nameEl = c.querySelector(".doctor-name");
-      if (nameEl) {
-        c.classList.toggle("selected", nameEl.textContent === doctor.name);
-      }
+      c.classList.toggle("selected", String(c.dataset.doctorId) === String(doctor.id));
     });
 
     setBookingStep(2);
 
-    const initial = (doctor.name || "D").replace("Dr. ", "").charAt(0).toUpperCase();
+    const initial = (doctor.name || "D").replace("Dr. ", "").trim().charAt(0).toUpperCase();
     const infoEl = document.getElementById("selectedDoctorInfo");
     if (infoEl) {
       infoEl.innerHTML = `
@@ -410,11 +495,25 @@ const ALL_SLOTS = [
 function renderTimeSlots() {
   const container = document.getElementById("timeSlots");
   if (!container) return;
+
+  // Determine taken slots for this doctor + date
+  const taken = new Set(
+    appointments
+      .filter(a =>
+        String(a.doctorId || "") === String(selectedDoctor?.id || "") &&
+        a.date === selectedDate &&
+        (a.status === "upcoming" || a.status === "confirmed")
+      )
+      .map(a => a.time)
+  );
+
   container.innerHTML = ALL_SLOTS.map(slot => `
-    <button class="time-slot" data-time="${slot}">${slot}</button>
+    <button class="time-slot ${taken.has(slot) ? "disabled" : ""}"
+            data-time="${slot}"
+            ${taken.has(slot) ? "disabled" : ""}>${slot}</button>
   `).join("");
 
-  container.querySelectorAll(".time-slot").forEach(btn => {
+  container.querySelectorAll(".time-slot:not(.disabled)").forEach(btn => {
     btn.addEventListener("click", () => {
       container.querySelectorAll(".time-slot").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
@@ -436,15 +535,15 @@ function renderAppointments() {
     );
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty-state">
-        <p>${currentTab === "upcoming" ? "No upcoming appointments." : "No past appointments."}</p>
-      </div>`;
+      list.innerHTML = `<div class="empty-state"><p>${currentTab === "upcoming" ? "No upcoming appointments." : "No past appointments."}</p></div>`;
       return;
     }
 
-    filtered.sort((a, b) => currentTab === "upcoming"
-      ? new Date(a.date) - new Date(b.date)
-      : new Date(b.date) - new Date(a.date));
+    filtered.sort((a, b) =>
+      currentTab === "upcoming"
+        ? new Date(a.date) - new Date(b.date)
+        : new Date(b.date) - new Date(a.date)
+    );
 
     list.innerHTML = filtered.map(a => {
       const d = new Date(a.date);
@@ -532,88 +631,163 @@ function loadProfile() {
   set("pAddress", patient.address);
 }
 
-// =====================================================
-// ============ EVENT LISTENERS (Attach) ===============
-// =====================================================
+/* =====================================================
+   ✅ INIT — runs on DOM ready
+   ===================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 DOM ready — initializing patient dashboard");
 
-// Sidebar navigation
-document.querySelectorAll(".nav-item").forEach((item) => {
-  item.addEventListener("click", () => {
-    try {
-      const section = item.dataset.section;
-      document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
-      item.classList.add("active");
+  initHeader();
+  initHospitalStatus();
+  renderDashboard();
 
-      document.querySelectorAll(".page-section").forEach((s) => s.classList.remove("active"));
-      const target = document.getElementById(`section-${section}`);
-      if (target) target.classList.add("active");
+  // Menu toggle
+  safeBind("menuToggle", "click", () => {
+    document.getElementById("sidebar")?.classList.toggle("open");
+  });
 
-      const sub = document.getElementById("pageSubtitle");
-      if (sub) {
-        const subtitles = {
-          dashboard: "Your health, our priority",
-          doctors: "Search medical specialists",
-          book: "Select doctor, date & time",
-          appointments: "Track your visits",
-          payments: "All your transactions",
-          profile: "Manage personal info",
-        };
-        sub.textContent = subtitles[section] || "";
-      }
+  // Logout
+  safeBind("logoutBtn", "click", () => {
+    if (confirm("Logout from MediCare?")) {
+      localStorage.removeItem("medicare_user");
+      window.location.href = "index.html";
+    }
+  });
 
-      const sb = document.getElementById("sidebar");
-      if (sb) sb.classList.remove("open");
+  // Search / filter
+  safeBind("doctorSearch", "input", renderAllDoctors);
+  safeBind("specFilter", "change", renderAllDoctors);
 
-      // Render section content
-      if (section === "dashboard") renderDashboard();
-      if (section === "doctors") renderAllDoctors();
-      if (section === "book") renderBookDoctors();
-      if (section === "appointments") renderAppointments();
-      if (section === "payments") renderPayments();
-      if (section === "profile") loadProfile();
-    } catch (e) {
-      console.error("nav error:", e);
+  // Date change
+  safeBind("apptDate", "change", (e) => {
+    selectedDate = e.target.value;
+    if (selectedDoctor) renderTimeSlots();
+  });
+
+  // Back to step 1
+  safeBind("backToStep1", "click", () => setBookingStep(1));
+
+  // Proceed to pay
+  safeBind("proceedToPay", "click", () => {
+    if (!selectedDoctor) return alert("Please select a doctor first.");
+    if (!selectedDate)   return alert("Please choose a date.");
+    if (!selectedTime)   return alert("Please select a time slot.");
+
+    const date = new Date(selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return alert("Please choose a future date.");
+
+    const payDoctor     = document.getElementById("payDoctor");
+    const payDateTime   = document.getElementById("payDateTime");
+    const payAmount     = document.getElementById("payAmount");
+    const payTotal      = document.getElementById("payTotal");
+
+    if (payDoctor)   payDoctor.textContent   = selectedDoctor.name;
+    if (payDateTime) payDateTime.textContent = `${formatDate(selectedDate)} • ${selectedTime}`;
+    if (payAmount)   payAmount.textContent   = `₹${selectedDoctor.fee}`;
+    if (payTotal)    payTotal.textContent    = `₹${selectedDoctor.fee}`;
+
+    setBookingStep(3);
+  });
+
+  // Confirm booking
+  safeBind("confirmBooking", "click", () => {
+    if (!selectedDoctor || !selectedDate || !selectedTime) {
+      return alert("Booking info incomplete. Please restart.");
+    }
+
+    const methodEl = document.querySelector('input[name="payMethod"]:checked');
+    const method = methodEl ? methodEl.value : "UPI";
+
+    const apptId = "APT-" + Date.now().toString(36).toUpperCase();
+    const payId  = "PAY-" + Date.now().toString(36).toUpperCase();
+    const txnId  = "TXN" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    const newAppt = {
+      id: apptId,
+      doctorId: selectedDoctor.id,
+      doctorName: selectedDoctor.name,
+      doctorSpec: selectedDoctor.specialization,
+      date: selectedDate,
+      time: selectedTime,
+      reason: document.getElementById("apptReason")?.value || "General consultation",
+      status: "upcoming",
+      paid: selectedDoctor.fee,
+    };
+
+    const newPay = {
+      id: payId,
+      date: new Date().toISOString().split("T")[0],
+      doctorName: selectedDoctor.name,
+      amount: selectedDoctor.fee,
+      method,
+      status: "success",
+      txnId,
+    };
+
+    appointments.push(newAppt);
+    payments.push(newPay);
+    DB.set(apptKey, appointments);
+    DB.set(payKey, payments);
+alert(`✅ Appointment booked!\n\nDoctor: ${selectedDoctor.name}\nDate: ${formatDate(selectedDate)}\nTime: ${selectedTime}\nTxn: ${txnId}`);
+
+    // Reset
+    selectedDoctor = null;
+    selectedDate = "";
+    selectedTime = "";
+    setBookingStep(1);
+    switchSection("appointments");
+  });
+
+  // Appointment tab toggle
+  document.querySelectorAll(".appt-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".appt-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      currentTab = tab.dataset.tab || "upcoming";
+      renderAppointments();
+    });
+  });
+
+  // Save profile
+  safeBind("saveProfile", "click", () => {
+    patient.name    = document.getElementById("pName")?.value    || patient.name;
+    patient.phone   = document.getElementById("pPhone")?.value   || patient.phone;
+    patient.age     = document.getElementById("pAge")?.value     || patient.age;
+    patient.gender  = document.getElementById("pGender")?.value  || patient.gender;
+    patient.blood   = document.getElementById("pBlood")?.value   || patient.blood;
+    patient.address = document.getElementById("pAddress")?.value || patient.address;
+
+    DB.set(patientKey, patient);
+    initHeader();
+    alert("✅ Profile saved!");
+  });
+
+  // Re-render if admin changes doctors in another tab
+  window.addEventListener("storage", (e) => {
+    if (e.key && e.key.toLowerCase().includes("doctor")) {
+      console.log("🔄 Doctor list changed by admin — refreshing");
+      const activeSection = document.querySelector(".nav-item.active")?.dataset.section;
+      if (activeSection === "doctors")      renderAllDoctors();
+      if (activeSection === "dashboard")    renderDashboard();
+      if (activeSection === "book")         renderBookDoctors();
     }
   });
 });
+```
 
-// Menu toggle
-safeBind("menuToggle", "click", () => {
-  const sb = document.getElementById("sidebar");
-  if (sb) sb.classList.toggle("open");
-});
+---
 
-// Logout
-safeBind("logoutBtn", "click", () => {
-  if (confirm("Logout from MediCare?")) {
-    localStorage.removeItem("medicare_user");
-    window.location.href = "index.html";
-  }
-});
+🔑 What Was Fixed
 
-// Search / filter
-safeBind("doctorSearch", "input", renderAllDoctors);
-safeBind("specFilter", "change", renderAllDoctors);
+1. Navigation Now Works
 
-// Date change
-safeBind("apptDate", "change", (e) => {
-  selectedDate = e.target.value;
-});
+· Moved all addEventListener calls inside DOMContentLoaded — previously they ran before elements existed.
+· Added a global delegated click listener on document that catches .nav-item clicks — works even for dynamically-added nav items.
+· Created a single switchSection(name) function used everywhere (nav clicks, doctor-book buttons, redirects).
+· Supports both data-section="doctors" and href="#doctors" styles.
 
-// Proceed to pay
-safeBind("proceedToPay", "click", () => {
-  if (!selectedDoctor) return alert("Please select a doctor first.");
-  if (!selectedDate) return alert("Please choose a date.");
-  if (!selectedTime) return alert("Please select a time slot.");
+2. Admin Doctors Now Sync
 
-  const date = new Date(selectedDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (date < today) return alert("Please choose a future date.");
-
-  const payDoctor = document.getElementById("payDoctor");
-  const payDateTime = document.getElementById("payDateTime");
-  const payAmount = document.getElementById("payAmount");
-  const payTotal = document.getElementById("payTotal");
-
-  if (payDoctor) payDoctor
+· getAllDoctors() now scans 6 possible localStorage keys (medicare_doctors, doctors, medicareDoctors, etc.).
