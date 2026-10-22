@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doctor Login — MediCare</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+  body{min-height:100vh;background:linear-gradient(135deg,#1a0b2e 0%,#2d1b4e 50%,#1a0b2e 100%);
+       display:flex;align-items:center;justify-content:center;padding:20px;color:#fff}
+  .card{background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);
+        border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:40px;
+        width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+  .logo{text-align:center;margin-bottom:30px}
+  .logo-icon{width:64px;height:64px;border-radius:20px;
+             background:linear-gradient(135deg,#8b5cf6,#6366f1);display:inline-flex;
+             align-items:center;justify-content:center;font-size:32px;margin-bottom:16px}
+  .logo h1{font-size:24px;margin-bottom:6px}
+  .logo p{font-size:13px;color:rgba(255,255,255,0.6)}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:12px;margin-bottom:8px;
+               color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px}
+  .field input{width:100%;padding:14px 16px;border-radius:12px;
+               background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);
+               color:#fff;font-size:15px;outline:none;transition:all .2s}
+  .field input:focus{border-color:#8b5cf6;background:rgba(139,92,246,0.1)}
+  .btn{width:100%;padding:14px;border-radius:12px;
+       background:linear-gradient(135deg,#8b5cf6,#6366f1);border:none;
+       color:#fff;font-size:15px;font-weight:600;cursor:pointer;
+       margin-top:10px;transition:transform .2s}
+  .btn:hover{transform:translateY(-2px)}
+  .err{color:#f87171;font-size:13px;text-align:center;margin-top:12px;min-height:18px}
+  .hint{font-size:12px;color:rgba(255,255,255,0.4);text-align:center;margin-top:20px;line-height:1.6}
+  .hint code{background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;color:#b9a8ff}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">👨‍⚕️</div>
+      <h1>Doctor Login</h1>
+      <p>MediCare Hospital — Staff Portal</p>
+    </div>
+    <form id="loginForm">
+      <div class="field">
+        <label>Doctor ID</label>
+        <input type="text" id="docId" placeholder="e.g. DOC-001" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="docPassword" placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="btn">Login to Dashboard</button>
+      <div class="err" id="loginError"></div>
+    </form>
+    <div class="hint">
+      Credentials provided by hospital admin.<br>
+      Demo: <code>DOC-001</code> / <code>doc@123</code>
+    </div>
+  </div>
+
+<script>
+document.getElementById("loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const id  = document.getElementById("docId").value.trim().toUpperCase();
+  const pw  = document.getElementById("docPassword").value;
+  const err = document.getElementById("loginError");
+  err.textContent = "";
+
+  // Find doctors from any key admin uses
+  const keys = ["medicare_doctors","medicare_doctor","doctors","medicareDoctors",
+                "medicare_doctor_list","medicare_admin_doctors","doctorList","allDoctors"];
+  let doctors = [];
+  for (const k of keys) {
+    try {
+      const v = JSON.parse(localStorage.getItem(k) || "[]");
+      if (Array.isArray(v) && v.length) { doctors = v; break; }
+    } catch {}
+  }
+  if (!doctors.length) {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.toLowerCase().includes("doctor")) continue;
+      try {
+        const v = JSON.parse(localStorage.getItem(k));
+        if (Array.isArray(v) && v.length && (v[0].name || v[0].specialization)) { doctors = v; break; }
+      } catch {}
+    }
+  }
+  // Seed demo doctors
+  if (!doctors.length) {
+    doctors = [
+      { id:"DOC-001", name:"Dr. Aarav Mehta", specialization:"Cardiology",
+        email:"aarav.mehta@medicare.com", password:"doc@123", fee:800,
+        availability:"Mon-Sat, 9AM - 5PM", status:"available",
+        phone:"+91 90000 11111", qualification:"MD, DM (Cardiology)" },
+      { id:"DOC-002", name:"Dr. Sneha Kapoor", specialization:"Dermatology",
+        email:"sneha.kapoor@medicare.com", password:"doc@123", fee:500,
+        availability:"Mon-Fri, 10AM - 4PM", status:"available",
+        phone:"+91 90000 22222", qualification:"MD (Dermatology)" },
+      { id:"DOC-003", name:"Dr. Rohan Iyer", specialization:"Orthopedics",
+        email:"rohan.iyer@medicare.com", password:"doc@123", fee:700,
+        availability:"Tue-Sun, 8AM - 2PM", status:"available",
+        phone:"+91 90000 33333", qualification:"MS (Ortho)" }
+    ];
+    localStorage.setItem("medicare_doctors", JSON.stringify(doctors));
+  }
+
+  const doc = doctors.find(d => {
+    const did = String(d.id || d.doctorId || d._id || "").toUpperCase();
+    return did === id && String(d.password || "") === pw;
+  });
+
+  if (!doc) { err.textContent = "❌ Invalid Doctor ID or password."; return; }
+
+  localStorage.setItem("medicare_doctor_user", JSON.stringify({
+    id: doc.id, name: doc.name, role: "doctor", specialization: doc.specialization
+  }));
+  window.location.href = "doctor.html";
+});
+</script>
+</body>
+</html>
