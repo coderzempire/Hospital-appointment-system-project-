@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doctor Dashboard — MediCare</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+  body{background:#13081f;color:#fff;min-height:100vh;overflow-x:hidden}
+  .app{display:flex;min-height:100vh}
+
+  /* Sidebar */
+  .sidebar{width:260px;background:rgba(255,255,255,0.03);
+           border-right:1px solid rgba(255,255,255,0.08);
+           padding:24px 16px;position:fixed;top:0;bottom:0;left:0;
+           overflow-y:auto;transition:transform .3s;z-index:100}
+  .brand{display:flex;align-items:center;gap:12px;padding:0 8px 24px;
+         border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:20px}
+  .brand-icon{width:44px;height:44px;border-radius:12px;
+              background:linear-gradient(135deg,#8b5cf6,#6366f1);
+              display:flex;align-items:center;justify-content:center;font-size:22px}
+  .brand h2{font-size:17px}
+  .brand p{font-size:11px;color:rgba(255,255,255,0.5)}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;
+            border-radius:10px;color:rgba(255,255,255,0.7);
+            cursor:pointer;font-size:14px;transition:all .2s;text-decoration:none}
+  .nav-item:hover{background:rgba(255,255,255,0.05);color:#fff}
+  .nav-item.active{background:linear-gradient(135deg,rgba(139,92,246,0.3),rgba(99,102,241,0.2));
+                   color:#fff;border:1px solid rgba(139,92,246,0.4)}
+
+  /* Main */
+  .main{flex:1;margin-left:260px;padding:0;min-height:100vh}
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+          padding:20px 32px;border-bottom:1px solid rgba(255,255,255,0.08);
+          background:rgba(19,8,31,0.8);backdrop-filter:blur(10px);
+          position:sticky;top:0;z-index:50}
+  .topbar h1{font-size:20px;margin-bottom:2px}
+  .topbar p{font-size:13px;color:rgba(255,255,255,0.5)}
+  .topbar-right{display:flex;align-items:center;gap:16px}
+  .status-pill{display:flex;align-items:center;gap:8px;padding:8px 14px;
+               background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);
+               border-radius:20px;font-size:13px;color:#4ade80}
+  .status-pill.busy{background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.3);color:#fbbf24}
+  .status-pill.offline{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#f87171}
+  .status-pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor;
+                    box-shadow:0 0 8px currentColor}
+  .avatar{width:42px;height:42px;border-radius:50%;
+          background:linear-gradient(135deg,#8b5cf6,#6366f1);
+          display:flex;align-items:center;justify-content:center;
+          font-weight:700;font-size:16px}
+  .menu-toggle{display:none;background:none;border:none;color:#fff;
+               font-size:22px;cursor:pointer;margin-right:12px}
+
+  .content{padding:32px}
+  .page-section{display:none;animation:fadeIn .3s}
+  .page-section.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* Stats */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+              gap:16px;margin-bottom:24px}
+  .stat-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+             border-radius:16px;padding:20px;display:flex;align-items:center;gap:16px}
+  .stat-icon{width:52px;height:52px;border-radius:14px;
+             background:linear-gradient(135deg,rgba(139,92,246,0.3),rgba(99,102,241,0.2));
+             display:flex;align-items:center;justify-content:center;font-size:24px}
+  .stat-card h3{font-size:26px;margin-bottom:2px}
+  .stat-card p{font-size:12px;color:rgba(255,255,255,0.5)}
+
+  /* Cards */
+  .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+        border-radius:16px;padding:24px;margin-bottom:20px}
+  .card h3{font-size:16px;margin-bottom:16px}
+  .muted{color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:16px}
+
+  /* Tabs */
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tab{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.04);
+       border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);
+       cursor:pointer;font-size:13px;transition:all .2s}
+  .tab:hover{background:rgba(255,255,255,0.08)}
+  .tab.active{background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border-color:transparent}
+
+  /* Appointment card */
+  .appt{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+        border-radius:14px;padding:18px;margin-bottom:12px;
+        display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .appt-left{flex:1;min-width:200px}
+  .appt h4{font-size:15px;margin-bottom:6px}
+  .appt .meta{font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:4px;line-height:1.5}
+  .appt .reason{font-size:13px;color:#b9a8ff;margin-top:6px;font-style:italic}
+  .appt-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+  .btn-sm{padding:8px 14px;border-radius:8px;border:none;cursor:pointer;
+          font-size:12px;font-weight:600;transition:all .2s}
+  .btn-accept{background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.4)}
+  .btn-accept:hover{background:rgba(34,197,94,0.3)}
+  .btn-reject{background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4)}
+  .btn-reject:hover{background:rgba(239,68,68,0.3)}
+  .btn-complete{background:rgba(139,92,246,0.2);color:#b9a8ff;border:1px solid rgba(139,92,246,0.4)}
+  .btn-complete:hover{background:rgba(139,92,246,0.3)}
+  .badge{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;
+         text-transform:capitalize;display:inline-block}
+  .badge.pending{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3)}
+  .badge.accepted{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+  .badge.completed{background:rgba(139,92,246,0.15);color:#b9a8ff;border:1px solid rgba(139,92,246,0.3)}
+  .badge.rejected{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+  .badge.cancelled{background:rgba(156,163,175,0.15);color:#9ca3af;border:1px solid rgba(156,163,175,0.3)}
+
+  /* Patient card */
+  .patient-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+                border-radius:14px;padding:18px;margin-bottom:12px}
+  .patient-card .head{display:flex;justify-content:space-between;
+                      align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .patient-card h4{font-size:15px;margin-bottom:4px}
+  .patient-card .meta{font-size:12px;color:rgba(255,255,255,0.5)}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:rgba(255,255,255,0.6);
+               margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+  .field input,.field textarea{width:100%;padding:10px 12px;border-radius:8px;
+                                background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+                                color:#fff;font-size:13px;outline:none;font-family:inherit}
+  .field input:focus,.field textarea:focus{border-color:#8b5cf6}
+  .field textarea{resize:vertical;min-height:70px}
+
+  /* Availability */
+  .status-options{display:flex;gap:10px;flex-wrap:wrap}
+  .status-btn{padding:14px 22px;border-radius:12px;background:rgba(255,255,255,0.04);
+              border:1px solid rgba(255,255,255,0.1);color:#fff;cursor:pointer;
+              font-size:14px;transition:all .2s}
+  .status-btn:hover{background:rgba(255,255,255,0.08)}
+  .status-btn.selected[data-status="available"]{background:rgba(34,197,94,0.25);border-color:#4ade80;color:#4ade80}
+  .status-btn.selected[data-status="busy"]{background:rgba(251,191,36,0.25);border-color:#fbbf24;color:#fbbf24}
+  .status-btn.selected[data-status="offline"]{background:rgba(239,68,68,0.25);border-color:#f87171;color:#f87171}
+  .btn-primary{width:100%;padding:13px;border-radius:10px;
+               background:linear-gradient(135deg,#8b5cf6,#6366f1);
+               border:none;color:#fff;font-weight:600;cursor:pointer;
+               font-size:14px;transition:transform .2s;margin-top:12px}
+  .btn-primary:hover{transform:translateY(-1px)}
+
+  .empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.4);font-size:14px}
+
+  @media (max-width:900px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:translateX(0)}
+    .main{margin-left:0}
+    .menu-toggle{display:block}
+    .topbar{padding:16px 20px}
+    .content{padding:20px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">👨‍⚕️</div>
+      <div><h2>MediCare</h2><p>Doctor Portal</p></div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" data-section="dashboard"><span>📊</span> Dashboard</a>
+      <a class="nav-item" data-section="appointments"><span>📅</span> Appointments</a>
+      <a class="nav-item" data-section="patients"><span>👥</span> My Patients</a>
+      <a class="nav-item" data-section="availability"><span>🟢</span> Availability</a>
+      <a class="nav-item" data-section="profile"><span>⚙️</span> My Profile</a>
+      <a class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div>
+          <h1 id="welcomeText">Welcome, Doctor</h1>
+          <p id="pageSubtitle">Your dashboard overview</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="status-pill" id="statusPill">
+          <span class="dot"></span><span class="status-text">Available</span>
+        </span>
+        <div class="avatar" id="doctorAvatar">D</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Dashboard -->
+      <section class="page-section active" id="section-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon">📅</div>
+            <div><h3 id="statToday">0</h3><p>Today's Appointments</p></div></div>
+          <div class="stat-card"><div class="stat-icon">⏳</div>
+            <div><h3 id="statPending">0</h3><p>Pending Requests</p></div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div>
+            <div><h3 id="statCompleted">0</h3><p>Completed</p></div></div>
+          <div class="stat-card"><div class="stat-icon">👥</div>
+            <div><h3 id="statPatients">0</h3><p>Unique Patients</p></div></div>
+        </div>
+        <div class="card">
+          <h3>⏳ Pending Appointment Requests</h3>
+          <div id="dashboardPending"></div>
+        </div>
+      </section>
+
+      <!-- Appointments -->
+      <section class="page-section" id="section-appointments">
+        <div class="tabs">
+          <button class="tab active" data-tab="pending">⏳ Pending</button>
+          <button class="tab" data-tab="accepted">✅ Accepted</button>
+          <button class="tab" data-tab="completed">🏁 Completed</button>
+          <button class="tab" data-tab="rejected">❌ Rejected</button>
+        </div>
+        <div id="appointmentsList"></div>
+      </section>
+
+      <!-- Patients -->
+      <section class="page-section" id="section-patients">
+        <h3 style="margin-bottom:16px">👥 Patients Attended</h3>
+        <p class="muted" style="margin-bottom:20px">
+          Update diagnosis and notes after each consultation.
+        </p>
+        <div id="patientsList"></div>
+      </section>
+
+      <!-- Availability -->
+      <section class="page-section" id="section-availability">
+        <div class="card">
+          <h3>🟢 Set Your Availability</h3>
+          <p class="muted">Patients will see this status when browsing doctors.</p>
+          <div class="status-options">
+            <button class="status-btn" data-status="available">🟢 Available</button>
+            <button class="status-btn" data-status="busy">🟡 Busy</button>
+            <button class="status-btn" data-status="offline">🔴 Offline</button>
+          </div>
+          <div class="field" style="margin-top:20px">
+            <label>Working Hours</label>
+            <input type="text" id="availHours" placeholder="e.g. Mon-Sat, 9AM - 5PM">
+          </div>
+          <button class="btn-primary" id="saveAvailability">Save Availability</button>
+        </div>
+      </section>
+
+      <!-- Profile -->
+      <section class="page-section" id="section-profile">
+        <div class="card" id="profileCard"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="doctor.js"></script>
+</body>
+</html>
